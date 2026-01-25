@@ -64,4 +64,8 @@ export class AuthController extends Controller {
         }
 
     }
+
+    static async me(req: Request, res: Response) {
+        return res.status(200).json({ ...res.locals.user });
+    }
 }
