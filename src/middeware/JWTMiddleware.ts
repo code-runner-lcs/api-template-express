@@ -12,9 +12,6 @@ export class JWTMiddleware {
       return next();
     }
 
-    console.log(req.method, req.path);
-    console.log(JWTMiddleware.isPublic(req.method, req.path));
-
     if (JWTMiddleware.isPublic(req.method, req.path)) {
       return next();
     }
