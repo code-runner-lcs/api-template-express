@@ -225,6 +225,40 @@ describe('AuthController', () => {
       expect(mockJson).toHaveBeenCalledWith({ error: 'Internal server error' });
     });
   });
+
+  describe('me', () => {
+    it('should return 200 with user data from res.locals.user', async () => {
+      const mockUser = {
+        id: 1,
+        email: 'test@example.com',
+        name: 'John Doe',
+        createdAt: new Date('2024-01-01'),
+        updatedAt: new Date('2024-01-01'),
+      };
+
+      mockResponse.locals = { user: mockUser };
+
+      await AuthController.me(mockRequest as Request, mockResponse as Response);
+
+      expect(mockStatus).toHaveBeenCalledWith(200);
+      expect(mockJson).toHaveBeenCalledWith({
+        id: mockUser.id,
+        email: mockUser.email,
+        name: mockUser.name,
+        createdAt: mockUser.createdAt,
+        updatedAt: mockUser.updatedAt,
+      });
+    });
+
+    it('should return 200 with empty object if no user in res.locals', async () => {
+      mockResponse.locals = { user: undefined };
+
+      await AuthController.me(mockRequest as Request, mockResponse as Response);
+
+      expect(mockStatus).toHaveBeenCalledWith(200);
+      expect(mockJson).toHaveBeenCalledWith({});
+    });
+  });
 });
 
 describe('UtilsAuthentication', () => {
