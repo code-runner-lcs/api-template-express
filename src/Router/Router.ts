@@ -2,6 +2,7 @@ import Controller from "../controller/Controller";
 import { Express, Router as ExpressRouter } from "express";
 import * as fs from "fs";
 import * as path from "path";
+import { JWTMiddleware } from "../middeware/JWTMiddleware";
 
 export default class Router {
     private app: Express;
@@ -12,6 +13,8 @@ export default class Router {
 
     public async init() {
         this.app.get('/', Controller.home);
+
+        this.app.use(JWTMiddleware.checkBearerToken);
         await this.loadRoutes();
     }
 
