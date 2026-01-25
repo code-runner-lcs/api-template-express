@@ -47,6 +47,10 @@ export class AuthController extends Controller {
             return res.status(400).json({ error: validation.error.message });
         }
         try {
+            const userExists = await getRepo(User).findOne({ where: { email: validation.data.email } });
+            if (userExists) {
+                return res.status(400).json({ error: 'User already exists' });
+            }
             const user = await getRepo(User).create({
                 name: validation.data.name,
                 email: validation.data.email,
