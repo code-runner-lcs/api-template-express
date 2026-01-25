@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import { AppDataSource } from './data-source';
 
 import "reflect-metadata";
+import Router from './Router/Router';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -9,12 +10,11 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 
 AppDataSource.initialize()
-    .then(() => {
+    .then(async () => {
         console.log('BDD Connexion OK');
 
-        app.use('/', (req: Request, res: Response) => {
-            res.send('API template');
-        });
+        const router = new Router(app);
+        await router.init();
 
         app.listen(PORT, () => {
             console.log(`Server running on http://localhost:${PORT}`);
