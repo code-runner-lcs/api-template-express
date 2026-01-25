@@ -1,4 +1,4 @@
-# Trade Interface API
+# API express & typeORM template
 
 REST API built with Node.js, Express and TypeORM.
 
