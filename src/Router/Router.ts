@@ -1,4 +1,4 @@
-import Controller from "../Controller/Controller";
+import Controller from "../controller/Controller";
 import { Express, Router as ExpressRouter } from "express";
 import * as fs from "fs";
 import * as path from "path";

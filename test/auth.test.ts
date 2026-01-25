@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { AuthController } from '../src/Controller/Auth';
+import { AuthController } from '../src/controller/Auth';
 import { UtilsAuthentication } from '../src/utils/auth.util';
 import * as dataSource from '../src/data-source';
 
@@ -50,7 +50,7 @@ describe('AuthController', () => {
 
     it('should return 401 if user is not found', async () => {
       mockRequest.body = { email: 'test@example.com', password: 'password123' };
-      
+
       const mockRepo = {
         findOne: jest.fn().mockResolvedValue(null),
       };
@@ -64,7 +64,7 @@ describe('AuthController', () => {
 
     it('should return 401 if password is incorrect', async () => {
       mockRequest.body = { email: 'test@example.com', password: 'password123' };
-      
+
       const mockUser = {
         id: 1,
         email: 'test@example.com',
@@ -84,7 +84,7 @@ describe('AuthController', () => {
 
     it('should return 200 with token if credentials are valid', async () => {
       mockRequest.body = { email: 'test@example.com', password: 'password123' };
-      
+
       const mockUser = {
         id: 1,
         email: 'test@example.com',
@@ -94,7 +94,7 @@ describe('AuthController', () => {
         findOne: jest.fn().mockResolvedValue(mockUser),
       };
       const mockToken = 'jwt-token-123';
-      
+
       (dataSource.getRepo as jest.Mock).mockReturnValue(mockRepo);
       (UtilsAuthentication.check as jest.Mock).mockResolvedValue(true);
       (UtilsAuthentication.generateToken as jest.Mock).mockReturnValue(mockToken);
@@ -111,7 +111,7 @@ describe('AuthController', () => {
 
     it('should return 500 on server error', async () => {
       mockRequest.body = { email: 'test@example.com', password: 'password123' };
-      
+
       const mockRepo = {
         findOne: jest.fn().mockRejectedValue(new Error('Database error')),
       };
@@ -236,16 +236,16 @@ describe('UtilsAuthentication', () => {
     it('should hash a password and verify it correctly', async () => {
       // Real import for these tests
       const { UtilsAuthentication: RealAuth } = jest.requireActual('../src/utils/auth.util');
-      
+
       const password = 'testPassword123';
       const hashedPassword = await RealAuth.hash(password);
-      
+
       expect(hashedPassword).not.toBe(password);
       expect(hashedPassword).toHaveLength(60); // bcrypt hash length
-      
+
       const isValid = await RealAuth.check(password, hashedPassword);
       expect(isValid).toBe(true);
-      
+
       const isInvalid = await RealAuth.check('wrongPassword', hashedPassword);
       expect(isInvalid).toBe(false);
     });
@@ -254,16 +254,16 @@ describe('UtilsAuthentication', () => {
   describe('generateToken and checkToken', () => {
     it('should generate and verify a JWT token', () => {
       const { UtilsAuthentication: RealAuth } = jest.requireActual('../src/utils/auth.util');
-      
+
       // Ensure the secret is defined
       RealAuth.secret = 'test-secret-key';
-      
+
       const userData = { email: 'test@example.com', id: 1 };
       const token = RealAuth.generateToken(userData);
-      
+
       expect(token).toBeTruthy();
       expect(typeof token).toBe('string');
-      
+
       const decoded = RealAuth.checkToken(token) as any;
       expect(decoded.email).toBe(userData.email);
       expect(decoded.id).toBe(userData.id);
@@ -272,7 +272,7 @@ describe('UtilsAuthentication', () => {
     it('should return false for an invalid token', () => {
       const { UtilsAuthentication: RealAuth } = jest.requireActual('../src/utils/auth.util');
       RealAuth.secret = 'test-secret-key';
-      
+
       const result = RealAuth.checkToken('invalid-token');
       expect(result).toBe(false);
     });
@@ -281,24 +281,24 @@ describe('UtilsAuthentication', () => {
   describe('getBearerToken', () => {
     it('should extract the token from Authorization header', () => {
       const { UtilsAuthentication: RealAuth } = jest.requireActual('../src/utils/auth.util');
-      
+
       const mockReq = {
         headers: {
           authorization: 'Bearer my-jwt-token',
         },
       } as any;
-      
+
       const token = RealAuth.getBearerToken(mockReq);
       expect(token).toBe('my-jwt-token');
     });
 
     it('should return an empty string if no Authorization header', () => {
       const { UtilsAuthentication: RealAuth } = jest.requireActual('../src/utils/auth.util');
-      
+
       const mockReq = {
         headers: {},
       } as any;
-      
+
       const token = RealAuth.getBearerToken(mockReq);
       expect(token).toBe('');
     });

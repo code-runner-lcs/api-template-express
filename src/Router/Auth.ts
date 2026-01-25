@@ -1,4 +1,4 @@
-import { AuthController } from "../Controller/Auth";
+import { AuthController } from "../controller/Auth";
 import { Router } from "express";
 
 export const AuthRouter = (): Router => {
