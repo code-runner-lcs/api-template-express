@@ -178,6 +178,7 @@ describe('AuthController', () => {
       };
       const mockToken = 'jwt-token-123';
       const mockRepo = {
+        findOne: jest.fn().mockResolvedValue(null),
         create: jest.fn().mockReturnValue(mockUser),
         save: jest.fn().mockResolvedValue(mockUser),
       };
