@@ -1,9 +1,12 @@
 import { Request, Response, NextFunction } from "express";
 import { UtilsAuthentication } from "../utils/auth.util";
 import { publicRoutes } from "./public";
+import { getRepo } from "../data-source";
+import { User } from "../entities/User";
+import { JwtPayload } from "jsonwebtoken";
 
 export class JWTMiddleware {
-  static checkBearerToken(req: Request, res: Response, next: NextFunction) {
+  static async checkBearerToken(req: Request, res: Response, next: NextFunction) {
     // Allow all OPTIONS requests (CORS preflight)
     if (req.method === "OPTIONS") {
       return next();
@@ -22,15 +25,32 @@ export class JWTMiddleware {
       return res.status(401).json({ error: "missing token" });
     }
 
-    const tokenResult = UtilsAuthentication.checkToken(token);
+    const tokenResult = UtilsAuthentication.checkToken(token) as JwtPayload;
 
-    // Check that the token is valid (object with id and email)
-    if (tokenResult && typeof tokenResult === 'object' && 'id' in tokenResult && 'email' in tokenResult) {
-      res.locals.user = tokenResult;
-      return next();
-    } else {
+    try {
+      const user = await getRepo(User).findOne({ where: { email: tokenResult.email } });
+      if (!user) {
+        return res.status(401).json({ error: "User not found" });
+      }
+
+      // Check that the token is valid (object with id and email) 
+      if (tokenResult && typeof tokenResult === 'object' && 'id' in tokenResult && 'email' in tokenResult) {
+        res.locals.user = {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+        };
+
+        return next();
+      } else {
+        return res.status(401).json({ error: "Token invalid or expired" });
+      }
+    } catch (error) {
       return res.status(401).json({ error: "Token invalid or expired" });
     }
+
   }
 
   static isPublic(method: string, path: string) {
