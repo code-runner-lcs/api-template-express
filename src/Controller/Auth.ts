@@ -108,12 +108,18 @@ export class AuthController extends Controller {
         if (!tokenResult) {
             return res.status(400).json({ error: 'Invalid token' });
         }
-        const user = await getRepo(User).findOne({ where: { email: tokenResult.email } });
-        if (!user) {
-            return res.status(400).json({ error: 'User not found' });
+
+        try {
+            const user = await getRepo(User).findOne({ where: { email: tokenResult.email } });
+            if (!user) {
+                return res.status(400).json({ error: 'User not found' });
+            }
+            user.isEmailConfirmed = true;
+            await getRepo(User).save(user);
+            return res.status(200).json({ message: 'Email confirmed successfully' });
+        } catch (error) {
+            console.error(error);
+            return res.status(500).json({ error: 'Internal server error' });
         }
-        user.isEmailConfirmed = true;
-        await getRepo(User).save(user);
-        return res.status(200).json({ message: 'Email confirmed successfully' });
     }
 }
