@@ -31,7 +31,7 @@ export class UtilsAuthentication {
       return jwt.verify(token, this.secret);
     } catch (error) {
       if (error instanceof TokenExpiredError) {
-        return "Token expired, please reconnect.";
+        return "Token expired";
       }
       return false;
     }
