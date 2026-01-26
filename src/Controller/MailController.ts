@@ -41,6 +41,7 @@ export class MailController extends Controller {
                 return res.status(500).json({ error: 'Failed to send email' });
             }
         } catch (error) {
+            this.logError(error);
             return res.status(500).json({ error: 'Internal server error' });
         }
     }
@@ -68,6 +69,7 @@ export class MailController extends Controller {
                 return res.status(500).json({ error: 'Failed to send password reset email' });
             }
         } catch (error) {
+            this.logError(error);
             return res.status(500).json({ error: 'Internal server error' });
         }
     }
@@ -95,6 +97,7 @@ export class MailController extends Controller {
                 return res.status(500).json({ error: 'Failed to send confirmation email' });
             }
         } catch (error) {
+            this.logError(error);
             return res.status(500).json({ error: 'Internal server error' });
         }
     }

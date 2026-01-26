@@ -41,6 +41,7 @@ export class AuthController extends Controller {
             const token = UtilsAuthentication.generateToken({ email: user.email, id: user.id });
             return res.status(200).json({ token });
         } catch (error) {
+            this.logError(error);
             return res.status(500).json({ error: 'Internal server error' });
         }
     }
@@ -88,7 +89,7 @@ export class AuthController extends Controller {
             const token = UtilsAuthentication.generateToken({ email: user.email, id: user.id });
             return res.status(200).json({ message: 'User created successfully', token, mailErrors });
         } catch (error) {
-            console.error(error);
+            this.logError(error);
             return res.status(500).json({ error: 'Internal server error' });
         }
 
@@ -118,7 +119,7 @@ export class AuthController extends Controller {
             await getRepo(User).save(user);
             return res.status(200).json({ message: 'Email confirmed successfully' });
         } catch (error) {
-            console.error(error);
+            this.logError(error);
             return res.status(500).json({ error: 'Internal server error' });
         }
     }
