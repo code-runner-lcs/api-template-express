@@ -11,13 +11,12 @@ const sendEmailSchema = z.object({
 });
 
 const sendPasswordResetSchema = z.object({
-    to: z.string().email(),
-    name: z.string().min(1),
+    to: z.email(),
     resetToken: z.string().min(1),
 });
 
 const sendConfirmationSchema = z.object({
-    to: z.string().email(),
+    to: z.email(),
     name: z.string().min(1),
     confirmationToken: z.string().min(1),
 });
@@ -25,6 +24,10 @@ const sendConfirmationSchema = z.object({
 export class MailController extends Controller {
     /**
      * Sends a custom email
+     * @route POST /api/mail/send
+     * @param req - The request object
+     * @param res - The response object
+     * @returns A JSON object with the message
      */
     static async sendEmail(req: Request, res: Response) {
         const validation = sendEmailSchema.safeParse(req.body);
@@ -48,6 +51,10 @@ export class MailController extends Controller {
 
     /**
      * Sends a password reset email
+     * @route POST /api/mail/password-reset
+     * @param req - The request object
+     * @param res - The response object
+     * @returns A JSON object with the message
      */
     static async sendPasswordResetEmail(req: Request, res: Response) {
         const validation = sendPasswordResetSchema.safeParse(req.body);
@@ -59,7 +66,6 @@ export class MailController extends Controller {
         try {
             const success = await mailService.sendPasswordResetEmail(
                 validation.data.to,
-                validation.data.name,
                 validation.data.resetToken
             );
 
@@ -76,6 +82,10 @@ export class MailController extends Controller {
 
     /**
      * Sends a confirmation email
+     * @route POST /api/mail/confirmation
+     * @param req - The request object
+     * @param res - The response object
+     * @returns A JSON object with the message
      */
     static async sendConfirmationEmail(req: Request, res: Response) {
         const validation = sendConfirmationSchema.safeParse(req.body);

@@ -27,7 +27,8 @@ export class MailService {
     }
 
     /**
-     * Verifies SMTP configuration
+     * Checks if the SMTP connection is working
+     * @returns A boolean indicating if the SMTP connection was verified successfully
      */
     async verifyConnection(): Promise<boolean> {
         try {
@@ -41,6 +42,8 @@ export class MailService {
 
     /**
      * Sends an email
+     * @param options - The options for the email
+     * @returns A boolean indicating if the email was sent successfully
      */
     async sendMail(options: MailOptions): Promise<boolean> {
         try {
@@ -63,6 +66,9 @@ export class MailService {
 
     /**
      * Sends a welcome email
+     * @param to - The email address of the recipient
+     * @param name - The name of the user
+     * @returns A boolean indicating if the email was sent successfully
      */
     async sendWelcomeEmail(to: string, name: string): Promise<boolean> {
         const html = this.getWelcomeTemplate(name);
@@ -75,10 +81,14 @@ export class MailService {
 
     /**
      * Sends a password reset email
+     * @param to - The email address of the recipient
+     * @param name - The name of the user
+     * @param resetToken - The reset token
+     * @returns A boolean indicating if the email was sent successfully
      */
-    async sendPasswordResetEmail(to: string, name: string, resetToken: string): Promise<boolean> {
+    async sendPasswordResetEmail(to: string, resetToken: string): Promise<boolean> {
         const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`;
-        const html = this.getPasswordResetTemplate(name, resetUrl);
+        const html = this.getPasswordResetTemplate(resetUrl);
         return this.sendMail({
             to,
             subject: 'Réinitialisation de votre mot de passe',
@@ -88,6 +98,10 @@ export class MailService {
 
     /**
      * Sends a confirmation email
+     * @param to - The email address of the recipient
+     * @param name - The name of the user
+     * @param confirmationToken - The confirmation token
+     * @returns A boolean indicating if the email was sent successfully
      */
     async sendConfirmationEmail(to: string, name: string, confirmationToken: string): Promise<boolean> {
         const confirmationUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/confirm-email?token=${confirmationToken}`;
@@ -101,6 +115,8 @@ export class MailService {
 
     /**
      * HTML template for welcome email
+     * @param name - The name of the user
+     * @returns The HTML template
      */
     private getWelcomeTemplate(name: string): string {
         return `
@@ -119,17 +135,17 @@ export class MailService {
             <body>
                 <div class="container">
                     <div class="header">
-                        <h1>Bienvenue !</h1>
+                        <h1>Welcome!</h1>
                     </div>
                     <div class="content">
-                        <p>Bonjour ${name},</p>
-                        <p>Nous sommes ravis de vous accueillir sur notre plateforme !</p>
-                        <p>Votre compte a été créé avec succès. Vous pouvez maintenant commencer à utiliser tous nos services.</p>
-                        <p>Si vous avez des questions, n'hésitez pas à nous contacter.</p>
-                        <p>Cordialement,<br>L'équipe</p>
+                        <p>Hello ${name},</p>
+                        <p>We are happy to welcome you on our platform!</p>
+                        <p>Your account has been created successfully. You can now start using all our services.</p>
+                        <p>If you have any questions, please contact us.</p>
+                        <p>Best regards,<br>The team</p>
                     </div>
                     <div class="footer">
-                        <p>© ${new Date().getFullYear()} Tous droits réservés</p>
+                        <p>© ${new Date().getFullYear()} All rights reserved</p>
                     </div>
                 </div>
             </body>
@@ -139,8 +155,11 @@ export class MailService {
 
     /**
      * HTML template for password reset email
+     * @param name - The name of the user
+     * @param resetUrl - The reset URL
+     * @returns The HTML template
      */
-    private getPasswordResetTemplate(name: string, resetUrl: string): string {
+    private getPasswordResetTemplate(resetUrl: string): string {
         return `
             <!DOCTYPE html>
             <html>
@@ -159,22 +178,22 @@ export class MailService {
             <body>
                 <div class="container">
                     <div class="header">
-                        <h1>Réinitialisation de mot de passe</h1>
+                        <h1>Password reset</h1>
                     </div>
                     <div class="content">
-                        <p>Bonjour ${name},</p>
-                        <p>Vous avez demandé à réinitialiser votre mot de passe.</p>
-                        <p>Cliquez sur le bouton ci-dessous pour créer un nouveau mot de passe :</p>
+                        <p>Hello,</p>
+                        <p>You have requested to reset your password.</p>
+                        <p>Click the button below to reset your password:</p>
                         <p style="text-align: center;">
-                            <a href="${resetUrl}" class="button">Réinitialiser mon mot de passe</a>
+                            <a href="${resetUrl}" class="button">Reset your password</a>
                         </p>
-                        <p>Ou copiez ce lien dans votre navigateur :</p>
+                        <p>Or copy this link into your browser:</p>
                         <p style="word-break: break-all; color: #2196F3;">${resetUrl}</p>
-                        <p class="warning">⚠️ Ce lien est valide pendant 1 heure. Si vous n'avez pas demandé cette réinitialisation, ignorez cet email.</p>
-                        <p>Cordialement,<br>L'équipe</p>
+                        <p class="warning">⚠️ This link is valid for 1 hour. If you did not request this reset, ignore this email.</p>
+                        <p>Best regards,<br>The team</p>
                     </div>
                     <div class="footer">
-                        <p>© ${new Date().getFullYear()} Tous droits réservés</p>
+                            <p>© ${new Date().getFullYear()} All rights reserved</p>
                     </div>
                 </div>
             </body>
@@ -184,6 +203,9 @@ export class MailService {
 
     /**
      * HTML template for confirmation email
+     * @param name - The name of the user
+     * @param confirmationUrl - The confirmation URL
+     * @returns The HTML template
      */
     private getConfirmationTemplate(name: string, confirmationUrl: string): string {
         return `
@@ -226,6 +248,8 @@ export class MailService {
 
     /**
      * Extracts plain text from HTML
+     * @param html - The HTML to strip
+     * @returns The plain text
      */
     private stripHtml(html: string): string {
         return html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();

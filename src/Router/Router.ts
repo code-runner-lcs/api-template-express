@@ -11,6 +11,9 @@ export default class Router {
         this.app = app;
     }
 
+    /**
+     * Initializes the router
+     */
     public async init() {
         this.app.get('/', Controller.home);
 
@@ -18,6 +21,9 @@ export default class Router {
         await this.loadRoutes();
     }
 
+    /**
+     * Loads the routes
+     */
     private async loadRoutes() {
         const routerDir = __dirname;
         const files = fs.readdirSync(routerDir);

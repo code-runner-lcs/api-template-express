@@ -6,6 +6,13 @@ import { User } from "../entities/User";
 import { JwtPayload } from "jsonwebtoken";
 
 export class JWTMiddleware {
+  /**
+   * Checks if the bearer token is valid
+   * @param req - The request object
+   * @param res - The response object
+   * @param next - The next function
+   * @returns A JSON object with the user data or an error
+   */
   static async checkBearerToken(req: Request, res: Response, next: NextFunction) {
     // Allow all OPTIONS requests (CORS preflight)
     if (req.method === "OPTIONS") {
@@ -50,6 +57,12 @@ export class JWTMiddleware {
 
   }
 
+  /**
+   * Checks if the route is public
+   * @param method - The method of the request
+   * @param path - The path of the request
+   * @returns A boolean indicating if the route is public
+   */
   static isPublic(method: string, path: string) {
     return publicRoutes.some((route) => {
       if (route.method !== method) return false;
