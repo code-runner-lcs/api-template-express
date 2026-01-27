@@ -2,10 +2,12 @@ import { Request, Response } from 'express';
 import { AuthController } from '../src/controller/Auth';
 import { UtilsAuthentication } from '../src/utils/auth.util';
 import * as dataSource from '../src/data-source';
+import { mailService } from '../src/services/MailService';
 
 // Mock dependencies
 jest.mock('../src/data-source');
 jest.mock('../src/utils/auth.util');
+jest.mock('../src/services/MailService');
 
 describe('AuthController', () => {
   let mockRequest: Partial<Request>;
@@ -88,7 +90,17 @@ describe('AuthController', () => {
       const mockUser = {
         id: 1,
         email: 'test@example.com',
+        name: 'John Doe',
         password: 'hashedpassword',
+        createdAt: new Date('2024-01-01'),
+        updatedAt: new Date('2024-01-01'),
+        getUserWithoutPassword: jest.fn().mockReturnValue({
+          id: 1,
+          email: 'test@example.com',
+          name: 'John Doe',
+          createdAt: new Date('2024-01-01'),
+          updatedAt: new Date('2024-01-01'),
+        }),
       };
       const mockRepo = {
         findOne: jest.fn().mockResolvedValue(mockUser),
@@ -102,7 +114,10 @@ describe('AuthController', () => {
       await AuthController.login(mockRequest as Request, mockResponse as Response);
 
       expect(mockStatus).toHaveBeenCalledWith(200);
-      expect(mockJson).toHaveBeenCalledWith({ token: mockToken });
+      expect(mockJson).toHaveBeenCalledWith({
+        user: mockUser.getUserWithoutPassword(),
+        token: mockToken,
+      });
       expect(UtilsAuthentication.generateToken).toHaveBeenCalledWith({
         email: mockUser.email,
         id: mockUser.id,
@@ -163,7 +178,7 @@ describe('AuthController', () => {
       expect(mockJson).toHaveBeenCalledWith(expect.objectContaining({ error: expect.any(String) }));
     });
 
-    it('should return 200 with message and token on successful registration', async () => {
+    it('should return 200 with user, token and mailErrors on successful registration', async () => {
       mockRequest.body = {
         name: 'John Doe',
         email: 'test@example.com',
@@ -175,6 +190,15 @@ describe('AuthController', () => {
         name: 'John Doe',
         email: 'test@example.com',
         password: 'hashedpassword',
+        createdAt: new Date('2024-01-01'),
+        updatedAt: new Date('2024-01-01'),
+        getUserWithoutPassword: jest.fn().mockReturnValue({
+          id: 1,
+          name: 'John Doe',
+          email: 'test@example.com',
+          createdAt: new Date('2024-01-01'),
+          updatedAt: new Date('2024-01-01'),
+        }),
       };
       const mockToken = 'jwt-token-123';
       const mockRepo = {
@@ -186,13 +210,16 @@ describe('AuthController', () => {
       (dataSource.getRepo as jest.Mock).mockReturnValue(mockRepo);
       (UtilsAuthentication.hash as jest.Mock).mockResolvedValue('hashedpassword');
       (UtilsAuthentication.generateToken as jest.Mock).mockReturnValue(mockToken);
+      (mailService.sendWelcomeEmail as jest.Mock).mockResolvedValue(true);
+      (mailService.sendConfirmationEmail as jest.Mock).mockResolvedValue(true);
 
       await AuthController.register(mockRequest as Request, mockResponse as Response);
 
       expect(mockStatus).toHaveBeenCalledWith(200);
       expect(mockJson).toHaveBeenCalledWith({
-        message: 'User created successfully',
+        user: mockUser.getUserWithoutPassword(),
         token: mockToken,
+        mailErrors: [],
       });
       expect(UtilsAuthentication.hash).toHaveBeenCalledWith('password123');
       expect(mockRepo.create).toHaveBeenCalledWith({
@@ -203,6 +230,31 @@ describe('AuthController', () => {
       expect(mockRepo.save).toHaveBeenCalledWith(mockUser);
     });
 
+    it('should return 400 if user already exists', async () => {
+      mockRequest.body = {
+        name: 'John Doe',
+        email: 'test@example.com',
+        password: 'password123',
+      };
+
+      const existingUser = {
+        id: 1,
+        name: 'John Doe',
+        email: 'test@example.com',
+        password: 'hashedpassword',
+      };
+      const mockRepo = {
+        findOne: jest.fn().mockResolvedValue(existingUser),
+      };
+
+      (dataSource.getRepo as jest.Mock).mockReturnValue(mockRepo);
+
+      await AuthController.register(mockRequest as Request, mockResponse as Response);
+
+      expect(mockStatus).toHaveBeenCalledWith(400);
+      expect(mockJson).toHaveBeenCalledWith({ error: 'User already exists' });
+    });
+
     it('should return 500 on server error', async () => {
       mockRequest.body = {
         name: 'John Doe',
@@ -211,6 +263,7 @@ describe('AuthController', () => {
       };
 
       const mockRepo = {
+        findOne: jest.fn().mockResolvedValue(null),
         create: jest.fn().mockImplementation(() => {
           throw new Error('Database error');
         }),
