@@ -22,4 +22,14 @@ export class User {
 
     @UpdateDateColumn()
     updatedAt: Date;
+
+    getUserWithoutPassword() {
+        return {
+            id: this.id,
+            email: this.email,
+            name: this.name,
+            createdAt: this.createdAt,
+            updatedAt: this.updatedAt,
+        };
+    }
 }
