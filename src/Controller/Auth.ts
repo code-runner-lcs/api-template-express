@@ -23,6 +23,13 @@ const confirmEmailSchema = z.object({
 });
 
 export class AuthController extends Controller {
+
+    /**
+     * Logs in a user
+     * @param req - The request object
+     * @param res - The response object
+     * @returns A JSON object with the user data, token and mail errors
+     */
     static async login(req: Request, res: Response) {
         const { email, password } = req.body;
         const validation = loginSchema.safeParse({ email, password });
@@ -39,13 +46,19 @@ export class AuthController extends Controller {
                 return res.status(401).json({ error: 'Invalid credentials' });
             }
             const token = UtilsAuthentication.generateToken({ email: user.email, id: user.id });
-            return res.status(200).json({ token });
+            return res.status(200).json({ user: user.getUserWithoutPassword(), token });
         } catch (error) {
             this.logError(error);
             return res.status(500).json({ error: 'Internal server error' });
         }
     }
 
+    /**
+     * Registers a new user
+     * @param req - The request object
+     * @param res - The response object
+     * @returns A JSON object with the user data, token and mail errors
+     */
     static async register(req: Request, res: Response) {
         const { name, email, password } = req.body;
         const validation = registerSchema.safeParse({ name, email, password });
@@ -87,7 +100,8 @@ export class AuthController extends Controller {
 
             await getRepo(User).save(user);
             const token = UtilsAuthentication.generateToken({ email: user.email, id: user.id });
-            return res.status(200).json({ message: 'User created successfully', token, mailErrors });
+
+            return res.status(200).json({ user: user.getUserWithoutPassword(), token, mailErrors });
         } catch (error) {
             this.logError(error);
             return res.status(500).json({ error: 'Internal server error' });
@@ -95,10 +109,24 @@ export class AuthController extends Controller {
 
     }
 
+    /**
+     * Gets the current user
+     * @route GET /api/auth/me
+     * @param req - The request object
+     * @param res - The response object
+     * @returns A JSON object with the user data
+     */
     static async me(req: Request, res: Response) {
         return res.status(200).json({ ...res.locals.user });
     }
 
+    /**
+     * Confirms the email of a user
+     * @route GET /api/auth/confirm-email
+     * @param req - The request object
+     * @param res - The response object
+     * @returns A JSON object with the message
+     */
     static async confirmEmail(req: Request, res: Response) {
         const { token } = req.query;
         const validation = confirmEmailSchema.safeParse({ token });
