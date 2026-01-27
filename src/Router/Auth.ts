@@ -8,7 +8,8 @@ export const AuthRouter = (): Router => {
     router.post('/register', AuthController.register);
     router.get('/me', AuthController.me);
 
-    router.post('/password-reset', MailController.sendPasswordResetEmail);
+    router.post('/ask-password-reset', MailController.sendPasswordResetEmail);
+    router.post('/reset-password', AuthController.resetPassword);
     router.post('/confirmation', MailController.sendConfirmationEmail);
     router.get('/confirm-email', AuthController.confirmEmail);
     return router;

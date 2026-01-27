@@ -22,6 +22,11 @@ const confirmEmailSchema = z.object({
     token: z.string().min(1),
 });
 
+const resetPasswordSchema = z.object({
+    token: z.string().min(1),
+    password: z.string().min(8),
+});
+
 export class AuthController extends Controller {
 
     /**
@@ -146,6 +151,39 @@ export class AuthController extends Controller {
             user.isEmailConfirmed = true;
             await getRepo(User).save(user);
             return res.status(200).json({ message: 'Email confirmed successfully' });
+        } catch (error) {
+            this.logError(error);
+            return res.status(500).json({ error: 'Internal server error' });
+        }
+    }
+
+    /**
+     * Resets the password of a user
+     * @route POST /api/auth/reset-password
+     * @param req - The request object
+     * @param res - The response object
+     * @returns A JSON object with the message
+     */
+    static async resetPassword(req: Request, res: Response) {
+        const { token, password } = req.body;
+        const validation = resetPasswordSchema.safeParse({ token, password });
+        if (!validation.success) {
+            return res.status(400).json({ error: validation.error.message });
+        }
+
+        const tokenResult = UtilsAuthentication.checkToken(validation.data.token) as JwtPayload;
+        if (!tokenResult) {
+            return res.status(400).json({ error: 'Invalid token' });
+        }
+
+        try {
+            const user = await getRepo(User).findOne({ where: { email: tokenResult.email } });
+            if (!user) {
+                return res.status(400).json({ error: 'User not found' });
+            }
+            user.password = await UtilsAuthentication.hash(validation.data.password);
+            await getRepo(User).save(user);
+            return res.status(200).json({ message: 'Password reset successfully' });
         } catch (error) {
             this.logError(error);
             return res.status(500).json({ error: 'Internal server error' });
