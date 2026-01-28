@@ -88,7 +88,7 @@ export class AuthController extends Controller {
                 validation.data.name
             );
 
-            const confirmationToken = UtilsAuthentication.generateToken({ email: user.email, id: user.id });
+            const confirmationToken = UtilsAuthentication.generateToken({ email: user.email, id: user.id }, undefined);
             const successConfirmation = await mailService.sendConfirmationEmail(
                 validation.data.email,
                 validation.data.name,
