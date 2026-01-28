@@ -312,6 +312,215 @@ describe('AuthController', () => {
       expect(mockJson).toHaveBeenCalledWith({});
     });
   });
+
+  describe('confirmEmail', () => {
+    it('should return 400 if token is missing', async () => {
+      mockRequest.query = {};
+
+      await AuthController.confirmEmail(mockRequest as Request, mockResponse as Response);
+
+      expect(mockStatus).toHaveBeenCalledWith(400);
+      expect(mockJson).toHaveBeenCalledWith(expect.objectContaining({ error: expect.any(String) }));
+    });
+
+    it('should return 400 if token is invalid', async () => {
+      mockRequest.query = { token: 'invalid-token' };
+
+      (UtilsAuthentication.checkToken as jest.Mock).mockReturnValue(false);
+
+      await AuthController.confirmEmail(mockRequest as Request, mockResponse as Response);
+
+      expect(mockStatus).toHaveBeenCalledWith(400);
+      expect(mockJson).toHaveBeenCalledWith({ error: 'Invalid token' });
+    });
+
+    it('should return 400 if user is not found', async () => {
+      mockRequest.query = { token: 'valid-token' };
+
+      const mockTokenPayload = { email: 'test@example.com', id: 1 };
+      (UtilsAuthentication.checkToken as jest.Mock).mockReturnValue(mockTokenPayload);
+
+      const mockRepo = {
+        findOne: jest.fn().mockResolvedValue(null),
+      };
+      (dataSource.getRepo as jest.Mock).mockReturnValue(mockRepo);
+
+      await AuthController.confirmEmail(mockRequest as Request, mockResponse as Response);
+
+      expect(mockStatus).toHaveBeenCalledWith(400);
+      expect(mockJson).toHaveBeenCalledWith({ error: 'User not found' });
+    });
+
+    it('should return 200 and confirm email successfully', async () => {
+      mockRequest.query = { token: 'valid-token' };
+
+      const mockTokenPayload = { email: 'test@example.com', id: 1 };
+      (UtilsAuthentication.checkToken as jest.Mock).mockReturnValue(mockTokenPayload);
+
+      const mockUser = {
+        id: 1,
+        email: 'test@example.com',
+        name: 'John Doe',
+        isEmailConfirmed: false,
+        password: 'hashedpassword',
+        createdAt: new Date('2024-01-01'),
+        updatedAt: new Date('2024-01-01'),
+      };
+
+      const mockRepo = {
+        findOne: jest.fn().mockResolvedValue(mockUser),
+        save: jest.fn().mockResolvedValue({ ...mockUser, isEmailConfirmed: true }),
+      };
+      (dataSource.getRepo as jest.Mock).mockReturnValue(mockRepo);
+
+      await AuthController.confirmEmail(mockRequest as Request, mockResponse as Response);
+
+      expect(mockStatus).toHaveBeenCalledWith(200);
+      expect(mockJson).toHaveBeenCalledWith({ message: 'Email confirmed successfully' });
+      expect(mockUser.isEmailConfirmed).toBe(true);
+      expect(mockRepo.save).toHaveBeenCalledWith(mockUser);
+    });
+
+    it('should return 500 on server error', async () => {
+      mockRequest.query = { token: 'valid-token' };
+
+      const mockTokenPayload = { email: 'test@example.com', id: 1 };
+      (UtilsAuthentication.checkToken as jest.Mock).mockReturnValue(mockTokenPayload);
+
+      const mockRepo = {
+        findOne: jest.fn().mockRejectedValue(new Error('Database error')),
+      };
+      (dataSource.getRepo as jest.Mock).mockReturnValue(mockRepo);
+
+      await AuthController.confirmEmail(mockRequest as Request, mockResponse as Response);
+
+      expect(mockStatus).toHaveBeenCalledWith(500);
+      expect(mockJson).toHaveBeenCalledWith({ error: 'Internal server error' });
+    });
+  });
+
+  describe('resetPassword', () => {
+    it('should return 400 if token is missing', async () => {
+      mockRequest.body = {
+        password: 'newpassword123',
+      };
+
+      await AuthController.resetPassword(mockRequest as Request, mockResponse as Response);
+
+      expect(mockStatus).toHaveBeenCalledWith(400);
+      expect(mockJson).toHaveBeenCalledWith(expect.objectContaining({ error: expect.any(String) }));
+    });
+
+    it('should return 400 if password is missing', async () => {
+      mockRequest.body = {
+        token: 'reset-token',
+      };
+
+      await AuthController.resetPassword(mockRequest as Request, mockResponse as Response);
+
+      expect(mockStatus).toHaveBeenCalledWith(400);
+      expect(mockJson).toHaveBeenCalledWith(expect.objectContaining({ error: expect.any(String) }));
+    });
+
+    it('should return 400 if password is too short', async () => {
+      mockRequest.body = {
+        token: 'reset-token',
+        password: 'short',
+      };
+
+      await AuthController.resetPassword(mockRequest as Request, mockResponse as Response);
+
+      expect(mockStatus).toHaveBeenCalledWith(400);
+      expect(mockJson).toHaveBeenCalledWith(expect.objectContaining({ error: expect.any(String) }));
+    });
+
+    it('should return 400 if token is invalid', async () => {
+      mockRequest.body = {
+        token: 'invalid-token',
+        password: 'newpassword123',
+      };
+
+      (UtilsAuthentication.checkToken as jest.Mock).mockReturnValue(false);
+
+      await AuthController.resetPassword(mockRequest as Request, mockResponse as Response);
+
+      expect(mockStatus).toHaveBeenCalledWith(400);
+      expect(mockJson).toHaveBeenCalledWith({ error: 'Invalid token' });
+    });
+
+    it('should return 400 if user is not found', async () => {
+      mockRequest.body = {
+        token: 'valid-token',
+        password: 'newpassword123',
+      };
+
+      const mockTokenPayload = { email: 'test@example.com', id: 1 };
+      (UtilsAuthentication.checkToken as jest.Mock).mockReturnValue(mockTokenPayload);
+
+      const mockRepo = {
+        findOne: jest.fn().mockResolvedValue(null),
+      };
+      (dataSource.getRepo as jest.Mock).mockReturnValue(mockRepo);
+
+      await AuthController.resetPassword(mockRequest as Request, mockResponse as Response);
+
+      expect(mockStatus).toHaveBeenCalledWith(400);
+      expect(mockJson).toHaveBeenCalledWith({ error: 'User not found' });
+    });
+
+    it('should return 200 and reset password successfully', async () => {
+      mockRequest.body = {
+        token: 'valid-token',
+        password: 'newpassword123',
+      };
+
+      const mockTokenPayload = { email: 'test@example.com', id: 1 };
+      (UtilsAuthentication.checkToken as jest.Mock).mockReturnValue(mockTokenPayload);
+
+      const mockUser = {
+        id: 1,
+        email: 'test@example.com',
+        name: 'John Doe',
+        password: 'oldhashedpassword',
+        createdAt: new Date('2024-01-01'),
+        updatedAt: new Date('2024-01-01'),
+      };
+
+      const mockRepo = {
+        findOne: jest.fn().mockResolvedValue(mockUser),
+        save: jest.fn().mockResolvedValue({ ...mockUser, password: 'newhashedpassword' }),
+      };
+      (dataSource.getRepo as jest.Mock).mockReturnValue(mockRepo);
+      (UtilsAuthentication.hash as jest.Mock).mockResolvedValue('newhashedpassword');
+
+      await AuthController.resetPassword(mockRequest as Request, mockResponse as Response);
+
+      expect(mockStatus).toHaveBeenCalledWith(200);
+      expect(mockJson).toHaveBeenCalledWith({ message: 'Password reset successfully' });
+      expect(UtilsAuthentication.hash).toHaveBeenCalledWith('newpassword123');
+      expect(mockRepo.save).toHaveBeenCalledWith({ ...mockUser, password: 'newhashedpassword' });
+    });
+
+    it('should return 500 on server error', async () => {
+      mockRequest.body = {
+        token: 'valid-token',
+        password: 'newpassword123',
+      };
+
+      const mockTokenPayload = { email: 'test@example.com', id: 1 };
+      (UtilsAuthentication.checkToken as jest.Mock).mockReturnValue(mockTokenPayload);
+
+      const mockRepo = {
+        findOne: jest.fn().mockRejectedValue(new Error('Database error')),
+      };
+      (dataSource.getRepo as jest.Mock).mockReturnValue(mockRepo);
+
+      await AuthController.resetPassword(mockRequest as Request, mockResponse as Response);
+
+      expect(mockStatus).toHaveBeenCalledWith(500);
+      expect(mockJson).toHaveBeenCalledWith({ error: 'Internal server error' });
+    });
+  });
 });
 
 describe('UtilsAuthentication', () => {

@@ -1,9 +1,13 @@
 import { Request, Response } from 'express';
 import { MailController } from '../src/controller/MailController';
 import { mailService } from '../src/services/MailService';
+import * as dataSource from '../src/data-source';
+import { UtilsAuthentication } from '../src/utils/auth.util';
 
-// Mock the mail service
+// Mock dependencies
 jest.mock('../src/services/MailService');
+jest.mock('../src/data-source');
+jest.mock('../src/utils/auth.util');
 
 describe('MailController', () => {
   let mockRequest: Partial<Request>;
@@ -161,7 +165,6 @@ describe('MailController', () => {
     it('should return 400 if email is invalid', async () => {
       mockRequest.body = {
         to: 'invalid-email',
-        resetToken: 'token123',
       };
 
       await MailController.sendPasswordResetEmail(mockRequest as Request, mockResponse as Response);
@@ -170,41 +173,74 @@ describe('MailController', () => {
       expect(mockJson).toHaveBeenCalledWith(expect.objectContaining({ error: expect.any(String) }));
     });
 
-    it('should return 400 if resetToken is missing', async () => {
+    it('should return 400 if user is not found', async () => {
       mockRequest.body = {
         to: 'test@example.com',
       };
 
+      const mockRepo = {
+        findOne: jest.fn().mockResolvedValue(null),
+      };
+      (dataSource.getRepo as jest.Mock).mockReturnValue(mockRepo);
+
       await MailController.sendPasswordResetEmail(mockRequest as Request, mockResponse as Response);
 
       expect(mockStatus).toHaveBeenCalledWith(400);
-      expect(mockJson).toHaveBeenCalledWith(expect.objectContaining({ error: expect.any(String) }));
+      expect(mockJson).toHaveBeenCalledWith({ error: 'User not found' });
     });
 
     it('should return 200 when password reset email is sent successfully', async () => {
       mockRequest.body = {
         to: 'test@example.com',
-        resetToken: 'reset-token-123',
       };
 
+      const mockUser = {
+        id: 1,
+        email: 'test@example.com',
+        name: 'John Doe',
+      };
+      const mockRepo = {
+        findOne: jest.fn().mockResolvedValue(mockUser),
+      };
+      const mockToken = 'generated-token-123';
+
+      (dataSource.getRepo as jest.Mock).mockReturnValue(mockRepo);
+      (UtilsAuthentication.generateToken as jest.Mock).mockReturnValue(mockToken);
       (mailService.sendPasswordResetEmail as jest.Mock).mockResolvedValue(true);
 
       await MailController.sendPasswordResetEmail(mockRequest as Request, mockResponse as Response);
 
       expect(mockStatus).toHaveBeenCalledWith(200);
-      expect(mockJson).toHaveBeenCalledWith({ message: 'Password reset email sent successfully' });
+      expect(mockJson).toHaveBeenCalledWith({ 
+        message: 'Password reset email sent successfully'
+      });
+      expect(UtilsAuthentication.generateToken).toHaveBeenCalledWith({
+        email: 'test@example.com',
+        id: 1,
+      }, '1h');
       expect(mailService.sendPasswordResetEmail).toHaveBeenCalledWith(
         'test@example.com',
-        'reset-token-123'
+        mockToken
       );
     });
 
     it('should return 500 when password reset email sending fails', async () => {
       mockRequest.body = {
         to: 'test@example.com',
-        resetToken: 'reset-token-123',
       };
 
+      const mockUser = {
+        id: 1,
+        email: 'test@example.com',
+        name: 'John Doe',
+      };
+      const mockRepo = {
+        findOne: jest.fn().mockResolvedValue(mockUser),
+      };
+      const mockToken = 'generated-token-123';
+
+      (dataSource.getRepo as jest.Mock).mockReturnValue(mockRepo);
+      (UtilsAuthentication.generateToken as jest.Mock).mockReturnValue(mockToken);
       (mailService.sendPasswordResetEmail as jest.Mock).mockResolvedValue(false);
 
       await MailController.sendPasswordResetEmail(mockRequest as Request, mockResponse as Response);
@@ -216,10 +252,12 @@ describe('MailController', () => {
     it('should return 500 on server error', async () => {
       mockRequest.body = {
         to: 'test@example.com',
-        resetToken: 'reset-token-123',
       };
 
-      (mailService.sendPasswordResetEmail as jest.Mock).mockRejectedValue(new Error('SMTP error'));
+      const mockRepo = {
+        findOne: jest.fn().mockRejectedValue(new Error('Database error')),
+      };
+      (dataSource.getRepo as jest.Mock).mockReturnValue(mockRepo);
 
       await MailController.sendPasswordResetEmail(mockRequest as Request, mockResponse as Response);
 
@@ -233,7 +271,6 @@ describe('MailController', () => {
       mockRequest.body = {
         to: 'invalid-email',
         name: 'John Doe',
-        confirmationToken: 'token123',
       };
 
       await MailController.sendConfirmationEmail(mockRequest as Request, mockResponse as Response);
@@ -245,7 +282,6 @@ describe('MailController', () => {
     it('should return 400 if name is missing', async () => {
       mockRequest.body = {
         to: 'test@example.com',
-        confirmationToken: 'token123',
       };
 
       await MailController.sendConfirmationEmail(mockRequest as Request, mockResponse as Response);
@@ -254,35 +290,55 @@ describe('MailController', () => {
       expect(mockJson).toHaveBeenCalledWith(expect.objectContaining({ error: expect.any(String) }));
     });
 
-    it('should return 400 if confirmationToken is missing', async () => {
+    it('should return 400 if user is not found', async () => {
       mockRequest.body = {
         to: 'test@example.com',
         name: 'John Doe',
       };
 
+      const mockRepo = {
+        findOne: jest.fn().mockResolvedValue(null),
+      };
+      (dataSource.getRepo as jest.Mock).mockReturnValue(mockRepo);
+
       await MailController.sendConfirmationEmail(mockRequest as Request, mockResponse as Response);
 
       expect(mockStatus).toHaveBeenCalledWith(400);
-      expect(mockJson).toHaveBeenCalledWith(expect.objectContaining({ error: expect.any(String) }));
+      expect(mockJson).toHaveBeenCalledWith({ error: 'User not found' });
     });
 
     it('should return 200 when confirmation email is sent successfully', async () => {
       mockRequest.body = {
         to: 'test@example.com',
         name: 'John Doe',
-        confirmationToken: 'confirmation-token-123',
       };
 
+      const mockUser = {
+        id: 1,
+        email: 'test@example.com',
+        name: 'John Doe',
+      };
+      const mockRepo = {
+        findOne: jest.fn().mockResolvedValue(mockUser),
+      };
+      const mockToken = 'generated-token-123';
+
+      (dataSource.getRepo as jest.Mock).mockReturnValue(mockRepo);
+      (UtilsAuthentication.generateToken as jest.Mock).mockReturnValue(mockToken);
       (mailService.sendConfirmationEmail as jest.Mock).mockResolvedValue(true);
 
       await MailController.sendConfirmationEmail(mockRequest as Request, mockResponse as Response);
 
       expect(mockStatus).toHaveBeenCalledWith(200);
       expect(mockJson).toHaveBeenCalledWith({ message: 'Confirmation email sent successfully' });
+      expect(UtilsAuthentication.generateToken).toHaveBeenCalledWith({
+        email: 'test@example.com',
+        id: 1,
+      }, '1h');
       expect(mailService.sendConfirmationEmail).toHaveBeenCalledWith(
         'test@example.com',
         'John Doe',
-        'confirmation-token-123'
+        mockToken
       );
     });
 
@@ -290,9 +346,20 @@ describe('MailController', () => {
       mockRequest.body = {
         to: 'test@example.com',
         name: 'John Doe',
-        confirmationToken: 'confirmation-token-123',
       };
 
+      const mockUser = {
+        id: 1,
+        email: 'test@example.com',
+        name: 'John Doe',
+      };
+      const mockRepo = {
+        findOne: jest.fn().mockResolvedValue(mockUser),
+      };
+      const mockToken = 'generated-token-123';
+
+      (dataSource.getRepo as jest.Mock).mockReturnValue(mockRepo);
+      (UtilsAuthentication.generateToken as jest.Mock).mockReturnValue(mockToken);
       (mailService.sendConfirmationEmail as jest.Mock).mockResolvedValue(false);
 
       await MailController.sendConfirmationEmail(mockRequest as Request, mockResponse as Response);
@@ -305,10 +372,12 @@ describe('MailController', () => {
       mockRequest.body = {
         to: 'test@example.com',
         name: 'John Doe',
-        confirmationToken: 'confirmation-token-123',
       };
 
-      (mailService.sendConfirmationEmail as jest.Mock).mockRejectedValue(new Error('SMTP error'));
+      const mockRepo = {
+        findOne: jest.fn().mockRejectedValue(new Error('Database error')),
+      };
+      (dataSource.getRepo as jest.Mock).mockReturnValue(mockRepo);
 
       await MailController.sendConfirmationEmail(mockRequest as Request, mockResponse as Response);
 
