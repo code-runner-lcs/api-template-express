@@ -2,6 +2,9 @@ import { Request, Response } from "express";
 import Controller from "./Controller";
 import z from "zod";
 import { mailService } from "../services/MailService";
+import { UtilsAuthentication } from "../utils/auth.util";
+import { getRepo } from "../data-source";
+import { User } from "../entities/User";
 
 const sendEmailSchema = z.object({
     to: z.union([z.string().email(), z.array(z.string().email())]),
@@ -12,13 +15,11 @@ const sendEmailSchema = z.object({
 
 const sendPasswordResetSchema = z.object({
     to: z.email(),
-    resetToken: z.string().min(1),
 });
 
 const sendConfirmationSchema = z.object({
     to: z.email(),
     name: z.string().min(1),
-    confirmationToken: z.string().min(1),
 });
 
 export class MailController extends Controller {
@@ -50,7 +51,7 @@ export class MailController extends Controller {
     }
 
     /**
-     * Sends a password reset email
+     * Sends a password reset email with a token
      * @route POST /api/mail/password-reset
      * @param req - The request object
      * @param res - The response object
@@ -64,9 +65,14 @@ export class MailController extends Controller {
         }
 
         try {
+            const user = await getRepo(User).findOne({ where: { email: validation.data.to } });
+            if (!user) {
+                return res.status(400).json({ error: 'User not found' });
+            }
+            const token = UtilsAuthentication.generateToken({ email: validation.data.to, id: user.id }, "1h");
             const success = await mailService.sendPasswordResetEmail(
                 validation.data.to,
-                validation.data.resetToken
+                token
             );
 
             if (success) {
@@ -95,10 +101,15 @@ export class MailController extends Controller {
         }
 
         try {
+            const user = await getRepo(User).findOne({ where: { email: validation.data.to } });
+            if (!user) {
+                return res.status(400).json({ error: 'User not found' });
+            }
+            const token = UtilsAuthentication.generateToken({ email: validation.data.to, id: user.id }, "1h");
             const success = await mailService.sendConfirmationEmail(
                 validation.data.to,
                 validation.data.name,
-                validation.data.confirmationToken
+                token
             );
 
             if (success) {
