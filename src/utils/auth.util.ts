@@ -38,8 +38,8 @@ export class UtilsAuthentication {
    * @param user - The user information
    * @returns The JWT token
    */
-  static generateToken(user: UserTokenInformationType) {
-    return jwt.sign(user, this.secret, { expiresIn: "30d" });
+  static generateToken(user: UserTokenInformationType, expiresIn: string = "30d") {
+    return jwt.sign(user, this.secret, { expiresIn: expiresIn as jwt.SignOptions['expiresIn'] });
   }
 
   /**
