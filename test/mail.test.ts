@@ -161,19 +161,6 @@ describe('MailController', () => {
     it('should return 400 if email is invalid', async () => {
       mockRequest.body = {
         to: 'invalid-email',
-        name: 'John Doe',
-        resetToken: 'token123',
-      };
-
-      await MailController.sendPasswordResetEmail(mockRequest as Request, mockResponse as Response);
-
-      expect(mockStatus).toHaveBeenCalledWith(400);
-      expect(mockJson).toHaveBeenCalledWith(expect.objectContaining({ error: expect.any(String) }));
-    });
-
-    it('should return 400 if name is missing', async () => {
-      mockRequest.body = {
-        to: 'test@example.com',
         resetToken: 'token123',
       };
 
@@ -186,7 +173,6 @@ describe('MailController', () => {
     it('should return 400 if resetToken is missing', async () => {
       mockRequest.body = {
         to: 'test@example.com',
-        name: 'John Doe',
       };
 
       await MailController.sendPasswordResetEmail(mockRequest as Request, mockResponse as Response);
@@ -198,7 +184,6 @@ describe('MailController', () => {
     it('should return 200 when password reset email is sent successfully', async () => {
       mockRequest.body = {
         to: 'test@example.com',
-        name: 'John Doe',
         resetToken: 'reset-token-123',
       };
 
@@ -210,7 +195,6 @@ describe('MailController', () => {
       expect(mockJson).toHaveBeenCalledWith({ message: 'Password reset email sent successfully' });
       expect(mailService.sendPasswordResetEmail).toHaveBeenCalledWith(
         'test@example.com',
-        'John Doe',
         'reset-token-123'
       );
     });
@@ -218,7 +202,6 @@ describe('MailController', () => {
     it('should return 500 when password reset email sending fails', async () => {
       mockRequest.body = {
         to: 'test@example.com',
-        name: 'John Doe',
         resetToken: 'reset-token-123',
       };
 
@@ -233,7 +216,6 @@ describe('MailController', () => {
     it('should return 500 on server error', async () => {
       mockRequest.body = {
         to: 'test@example.com',
-        name: 'John Doe',
         resetToken: 'reset-token-123',
       };
 
