@@ -211,7 +211,7 @@ describe('MailController', () => {
       await MailController.sendPasswordResetEmail(mockRequest as Request, mockResponse as Response);
 
       expect(mockStatus).toHaveBeenCalledWith(200);
-      expect(mockJson).toHaveBeenCalledWith({ 
+      expect(mockJson).toHaveBeenCalledWith({
         message: 'Password reset email sent successfully'
       });
       expect(UtilsAuthentication.generateToken).toHaveBeenCalledWith({
